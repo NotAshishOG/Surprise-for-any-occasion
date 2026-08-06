@@ -7,6 +7,7 @@ import { Button } from "./ui/Button";
 import { CopyLink } from "./ui/CopyLink";
 import { supabase } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
+import { UserVerificationModal } from "./UserVerificationModal";
 
 export function CardForm() {
   const [occasion, setOccasion] = useState("Friendship Day");
@@ -28,6 +29,7 @@ export function CardForm() {
   const [signatureText, setSignatureText] = useState("designs by joy");
   const [showExtraPhotos, setShowExtraPhotos] = useState(false);
   const [showBalloonPhotos, setShowBalloonPhotos] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const nameOptions = ["Bestie", "Yaar", "Dost", "Bro", "Sis", "Best Friend", "Other"];
   const vibes = ["🤍 Wholesome", "😂 Roast-y & funny", "🙌 Ride-or-die hype", "🌻 Nostalgic"];
@@ -80,6 +82,11 @@ export function CardForm() {
       return;
     }
 
+    setError(null);
+    setIsModalOpen(true);
+  };
+
+  const handleFinalSubmit = async (userInfo: { name: string; email: string; phone: string }) => {
     setIsSubmitting(true);
     setError(null);
 
@@ -127,7 +134,8 @@ export function CardForm() {
         audioLink: musicType === "link" ? audioLink : undefined,
         signatureText: signatureText.trim() || undefined,
         extraPhotoUrls,
-        balloonPhotoUrls
+        balloonPhotoUrls,
+        userInfo
       };
 
       const res = await fetch("/api/create-card", {
@@ -145,6 +153,7 @@ export function CardForm() {
       }
 
       setResultUrl(data.url);
+      setIsModalOpen(false);
     } catch (err: unknown) {
       setError((err as Error).message);
     } finally {
@@ -202,6 +211,19 @@ export function CardForm() {
         >
           Create another one
         </Button>
+
+        {/* Privacy & Expiration Disclaimer */}
+        <div className="mt-8 pt-6 border-t-2 border-slate-100 max-w-sm mx-auto text-left">
+          <div className="flex items-start gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+            <span className="text-xl">🛡️</span>
+            <div>
+              <h4 className="font-bold text-sm text-gray-900 mb-1">Privacy Notice</h4>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Your uploaded images are securely stored and will be <strong className="text-gray-900">automatically deleted after 24 hours</strong>. We prioritize your privacy and do not keep your media permanently.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -523,6 +545,13 @@ export function CardForm() {
         </div>
 
       </form>
+
+      <UserVerificationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleFinalSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }

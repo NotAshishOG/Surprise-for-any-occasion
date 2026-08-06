@@ -46,3 +46,23 @@ export async function saveCard(card: Card): Promise<void> {
     throw new Error('Failed to save card');
   }
 }
+
+export interface Lead {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  card_id: string;
+  created_at?: string;
+}
+
+export async function saveLead(lead: Lead): Promise<void> {
+  const { error } = await supabase
+    .from('leads')
+    .insert([lead]);
+
+  if (error) {
+    console.error('Error saving lead:', error);
+    throw new Error('Failed to save lead info');
+  }
+}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import sanitizeHtml from 'sanitize-html';
-import { saveCard } from '@/lib/db';
+import { saveCard, saveLead } from '@/lib/db';
 import { isRateLimited } from '@/lib/rateLimiter';
 
 export async function POST(req: NextRequest) {
@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
       audioLink,
       signatureText,
       extraPhotoUrls,
-      balloonPhotoUrls
+      balloonPhotoUrls,
+      userInfo
     } = body;
 
     if (!recipientName || !message) {
@@ -51,6 +52,15 @@ export async function POST(req: NextRequest) {
     };
 
     await saveCard(card as any);
+
+    if (userInfo && userInfo.name && userInfo.email && userInfo.phone) {
+      await saveLead({
+        name: userInfo.name,
+        email: userInfo.email,
+        phone: userInfo.phone,
+        card_id: id
+      });
+    }
 
     return NextResponse.json({ id, url: `/surprise/${id}` });
   } catch (error) {
