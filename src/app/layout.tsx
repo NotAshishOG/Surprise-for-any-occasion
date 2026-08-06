@@ -21,8 +21,29 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "A Special Surprise For You",
+  title: "A Special Surprise For You! 🎁",
   description: "Create a beautiful, animated digital greeting card for someone special.",
+  openGraph: {
+    title: "A Special Surprise For You! 🎁",
+    description: "Create a beautiful, animated digital greeting card for someone special.",
+    url: "https://surprise-for-any-occasion-fzg1.vercel.app/",
+    siteName: "Special Surprise",
+    images: [
+      {
+        url: "https://surprise-for-any-occasion-fzg1.vercel.app/chatmi.jpg",
+        width: 1200,
+        height: 630,
+        alt: "A beautifully wrapped gift box",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "A Special Surprise For You! 🎁",
+    description: "Create a beautiful, animated digital greeting card for someone special.",
+    images: ["https://surprise-for-any-occasion-fzg1.vercel.app/chatmi.jpg"],
+  },
 };
 
 export default function RootLayout({
