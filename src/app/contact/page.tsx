@@ -119,7 +119,7 @@ export default function ContactUs() {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-gray-500">Email us</p>
-                    <a href="mailto:ashishmeena260309@gmail.com" className="font-bold hover:text-[#EF476F] transition-colors">ashishmeena260309@gmail.com</a>
+                    <a href="mailto:supportchatmiai@gmail.com" className="font-bold hover:text-[#EF476F] transition-colors">supportchatmiai@gmail.com</a>
                   </div>
                 </div>
 

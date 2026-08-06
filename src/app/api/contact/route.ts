@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     // Send the email
     await transporter.sendMail({
       from: `"Chatmi AI Support" <${process.env.SMTP_USER}>`,
-      to: "ashishmeena260309@gmail.com",
+      to: "supportchatmiai@gmail.com",
       replyTo: email,
       subject: `[Contact Form] ${subject}`,
       text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\nDate: ${dateStr}\nIP: ${ip}\n\nMessage:\n${message}`,
