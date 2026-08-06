@@ -69,17 +69,41 @@ export async function POST(request: Request) {
       subject: `[Contact Form] ${subject}`,
       text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\nDate: ${dateStr}\nIP: ${ip}\n\nMessage:\n${message}`,
       html: `
-        <div style="font-family: sans-serif; max-w-2xl; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-          <h2 style="color: #5B21B6; margin-top: 0;">New Contact Form Submission</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Name:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${name}</td></tr>
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Email:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><a href="mailto:${email}">${email}</a></td></tr>
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Subject:</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${subject}</td></tr>
-            <tr><td style="padding: 8px 0; border-bottom: 1px solid #eee;"><strong>Date (IST):</strong></td><td style="padding: 8px 0; border-bottom: 1px solid #eee;">${dateStr}</td></tr>
-            <tr><td style="padding: 8px 0;"><strong>IP Address:</strong></td><td style="padding: 8px 0;">${ip}</td></tr>
-          </table>
-          <h3 style="color: #333; margin-bottom: 10px;">Message:</h3>
-          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 6px; white-space: pre-wrap; color: #444; line-height: 1.5;">${message}</div>
+        <div style="font-family: 'Google Sans', Roboto, RobotoDraft, Helvetica, Arial, sans-serif; max-w-2xl; margin: 0 auto; padding: 40px 20px; background-color: #f9f9f9;">
+          <div style="max-width: 500px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 40px 30px; text-align: center;">
+            <div style="font-size: 24px; font-weight: 400; color: #202124; margin-bottom: 24px;">
+              New Contact Submission
+            </div>
+            
+            <div style="display: inline-flex; align-items: center; justify-content: center; background-color: #f1f3f4; padding: 6px 16px; border-radius: 16px; margin-bottom: 24px;">
+              <span style="display: inline-block; width: 20px; height: 20px; background-color: #9333ea; color: white; border-radius: 50%; text-align: center; line-height: 20px; font-size: 12px; margin-right: 8px;">M</span>
+              <span style="font-size: 14px; color: #3c4043; font-weight: 500;">${email}</span>
+            </div>
+
+            <p style="font-size: 16px; color: #3c4043; line-height: 1.5; margin-bottom: 32px; text-align: left;">
+              You received a new message from <strong>${name}</strong> regarding <strong>${subject}</strong>.
+            </p>
+
+            <div style="text-align: left; background-color: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 32px; border: 1px solid #f1f3f4;">
+              <p style="margin: 0; font-size: 14px; color: #3c4043; line-height: 1.6; white-space: pre-wrap;">${message}</p>
+            </div>
+
+            <a href="mailto:${email}" style="display: inline-block; background-color: #1a73e8; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 500; padding: 10px 24px; border-radius: 18px; margin-bottom: 16px;">
+              Reply to ${name}
+            </a>
+
+            <p style="font-size: 12px; color: #5f6368; line-height: 1.4; margin-bottom: 0;">
+              IP Address: ${ip} <br/>
+              Received: ${dateStr}
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 16px;">
+            <p style="font-size: 12px; color: #5f6368; line-height: 1.5; margin: 0;">
+              You received this email because someone submitted a message on the Contact form.<br/>
+              © ${new Date().getFullYear()} Special Surprise.
+            </p>
+          </div>
         </div>
       `,
     });
