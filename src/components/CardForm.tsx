@@ -5,6 +5,8 @@ import { useState, useRef } from "react";
 import { UploadZone } from "./UploadZone";
 import { Button } from "./ui/Button";
 import { CopyLink } from "./ui/CopyLink";
+import { supabase } from "@/lib/db";
+import { v4 as uuidv4 } from "uuid";
 
 export function CardForm() {
   const [occasion, setOccasion] = useState("Friendship Day");
@@ -81,33 +83,59 @@ export function CardForm() {
     setIsSubmitting(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append("senderName", senderName);
-    formData.append("recipientName", name);
-    formData.append("message", message);
-    formData.append("occasion", getOccasionText());
-    if (photo1) formData.append("photo1", photo1);
-    if (photo2) formData.append("photo2", photo2);
-    extraPhotos.forEach((file) => {
-      formData.append("extraPhotos", file);
-    });
-    balloonPhotos.forEach((file) => {
-      formData.append("balloonPhotos", file);
-    });
-    
-    if (musicType === "link" && audioLink) {
-      formData.append("audioLink", audioLink);
-    } else if (musicType === "upload" && audioFile) {
-      formData.append("audioFile", audioFile);
-    }
-    if (signatureText.trim()) {
-      formData.append("signatureText", signatureText.trim());
-    }
-
     try {
+      const uploadId = uuidv4();
+      
+      const uploadFile = async (file: File, prefix: string): Promise<string> => {
+        const safeFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const filePath = `${uploadId}/${prefix}-${safeFilename}`;
+        
+        const { error } = await supabase.storage
+          .from('uploads')
+          .upload(filePath, file, { cacheControl: '3600', upsert: false });
+          
+        if (error) throw new Error(`Failed to upload ${file.name}`);
+        
+        const { data } = supabase.storage.from('uploads').getPublicUrl(filePath);
+        return data.publicUrl;
+      };
+
+      let photo1Url, photo2Url, audioFileUrl;
+      const extraPhotoUrls: string[] = [];
+      const balloonPhotoUrls: string[] = [];
+
+      if (photo1) photo1Url = await uploadFile(photo1, 'photo1');
+      if (photo2) photo2Url = await uploadFile(photo2, 'photo2');
+      if (musicType === "upload" && audioFile) audioFileUrl = await uploadFile(audioFile, 'audio');
+
+      for (let i = 0; i < extraPhotos.length; i++) {
+        if (extraPhotos[i]) extraPhotoUrls.push(await uploadFile(extraPhotos[i], `extra-${i}`));
+      }
+
+      for (let i = 0; i < balloonPhotos.length; i++) {
+        if (balloonPhotos[i]) balloonPhotoUrls.push(await uploadFile(balloonPhotos[i], `balloon-${i}`));
+      }
+
+      const payload = {
+        senderName,
+        recipientName: name,
+        message,
+        occasion: getOccasionText(),
+        photo1Url,
+        photo2Url,
+        audioFileUrl,
+        audioLink: musicType === "link" ? audioLink : undefined,
+        signatureText: signatureText.trim() || undefined,
+        extraPhotoUrls,
+        balloonPhotoUrls
+      };
+
       const res = await fetch("/api/create-card", {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();

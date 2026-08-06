@@ -1,11 +1,9 @@
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
-// Using process.cwd() ensures it works when run from project root
-const DB_PATH = path.join(process.cwd(), 'data', 'cards.json');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Global lock to prevent race conditions during concurrent saves
-let dbLock = Promise.resolve();
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 export interface Card {
   id: string;
@@ -23,46 +21,28 @@ export interface Card {
   createdAt: string;
 }
 
-// Helper to ensure file exists
-function ensureDbExists() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, '[]', 'utf-8');
-  }
-}
+export async function getCardById(id: string): Promise<Card | undefined> {
+  const { data, error } = await supabase
+    .from('cards')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-export function getAllCards(): Card[] {
-  ensureDbExists();
-  try {
-    const data = fs.readFileSync(DB_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Failed to read db:', error);
-    return [];
+  if (error) {
+    console.error('Error fetching card:', error);
+    return undefined;
   }
-}
 
-export function getCardById(id: string): Card | undefined {
-  const cards = getAllCards();
-  return cards.find((c) => c.id === id);
+  return data as Card;
 }
 
 export async function saveCard(card: Card): Promise<void> {
-  const release = await new Promise<() => void>((resolve) => {
-    const previous = dbLock;
-    dbLock = previous.then(() => {
-      resolve(() => {});
-    });
-  });
+  const { error } = await supabase
+    .from('cards')
+    .insert([card]);
 
-  try {
-    const cards = getAllCards();
-    cards.push(card);
-    fs.writeFileSync(DB_PATH, JSON.stringify(cards, null, 2), 'utf-8');
-  } finally {
-    release();
+  if (error) {
+    console.error('Error saving card:', error);
+    throw new Error('Failed to save card');
   }
 }

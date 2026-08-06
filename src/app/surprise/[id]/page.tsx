@@ -9,7 +9,7 @@ export const metadata = {
 
 export default async function SurprisePage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const card = getCardById(params.id);
+  const card = await getCardById(params.id);
 
   if (!card) {
     notFound();
