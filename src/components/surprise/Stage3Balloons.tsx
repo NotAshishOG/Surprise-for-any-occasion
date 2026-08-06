@@ -54,7 +54,7 @@ export function Stage3Balloons({ card, onComplete }: Stage3Props) {
       durationY: 12 + Math.random() * 6,
       durationX: 3 + Math.random() * 2,
       animX: Math.random() * 60 - 30,
-      gifUrl: customPhotos[i] || shuffled[i % shuffled.length].image,
+      gifUrl: customPhotos.length > 0 ? customPhotos[i % customPhotos.length] : shuffled[i % shuffled.length].image,
       tilt: Math.random() > 0.5 ? (Math.random() * 12 + 5) : -(Math.random() * 12 + 5),
     }));
     // eslint-disable-next-line react-hooks/set-state-in-effect
