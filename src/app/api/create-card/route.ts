@@ -63,16 +63,16 @@ export async function POST(req: NextRequest) {
         slug: uuidv4().substring(0, 8),
         editToken: uuidv4(),
         occasion: enumOccasion as any,
-        customOccasion: enumOccasion === 'CUSTOM' ? occasion : null,
+        customOccasion: enumOccasion === 'CUSTOM' ? String(occasion || '').substring(0, 40) : null,
         recipientNickname: enumNickname as any,
-        customNickname: enumNickname === 'OTHER' ? recipientName : null,
-        senderName: senderName || 'Someone Special',
-        message: cleanMessage,
-        polaroidCaption: signatureText || null,
+        customNickname: enumNickname === 'OTHER' ? String(recipientName || '').substring(0, 30) : null,
+        senderName: String(senderName || 'Someone Special').substring(0, 40),
+        message: String(cleanMessage || '').substring(0, 600),
+        polaroidCaption: signatureText ? String(signatureText).substring(0, 120) : null,
         musicType: audioFileUrl ? 'UPLOAD' : audioLink ? 'YOUTUBE' : 'NONE',
         youtubeUrl: audioLink || null,
         status: 'PUBLISHED',
-        creatorIpHash: ip || '127.0.0.1', // we could hash it properly
+        creatorIpHash: String(ip || '127.0.0.1'),
         publishedAt: new Date()
       }
     });
@@ -100,18 +100,26 @@ export async function POST(req: NextRequest) {
     }
 
     if (mediaToCreate.length > 0) {
-      await Promise.all(mediaToCreate.map((item) => db.mediaAsset.create({ data: item as any })));
+      try {
+        await Promise.all(mediaToCreate.map((item) => db.mediaAsset.create({ data: item as any })));
+      } catch (mediaErr) {
+        console.error('Error creating media assets:', mediaErr);
+      }
     }
 
     if (userInfo && userInfo.name && userInfo.email && userInfo.phone) {
-      await db.lead.create({
-        data: {
-          name: userInfo.name,
-          email: userInfo.email,
-          phone: userInfo.phone,
-          cardId: id
-        }
-      });
+      try {
+        await db.lead.create({
+          data: {
+            name: String(userInfo.name).substring(0, 80),
+            email: String(userInfo.email).substring(0, 120),
+            phone: String(userInfo.phone).substring(0, 30),
+            cardId: id
+          }
+        });
+      } catch (leadErr) {
+        console.error('Error creating lead:', leadErr);
+      }
     }
 
     return NextResponse.json({ id, url: `/surprise/${id}` });
