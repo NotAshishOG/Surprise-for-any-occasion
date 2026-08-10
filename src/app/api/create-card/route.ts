@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/lib/db';
-import { isRateLimited } from '@/lib/rateLimiter';
-
+import { generateUniqueSlug } from '@/lib/slug';
 
 function sanitizeInput(str: string): string {
   if (!str) return '';
@@ -11,7 +10,14 @@ function sanitizeInput(str: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const settings = await db.systemSettings.findUnique({ where: { id: 'global' } });
+    // Step 1: Check maintenance mode
+    let settings;
+    try {
+      settings = await db.systemSettings.findUnique({ where: { id: 'global' } });
+    } catch (settingsErr) {
+      console.error('[create-card] Step 1 FAILED - systemSettings query:', settingsErr);
+      // Non-fatal: proceed without maintenance check
+    }
     if (settings?.maintenanceMode) {
       return NextResponse.json({ error: 'System is currently under maintenance. Card creation is temporarily paused.' }, { status: 503 });
     }
@@ -42,6 +48,16 @@ export async function POST(req: NextRequest) {
     const id = uuidv4();
     const cleanMessage = sanitizeInput(message);
 
+    // Step 2: Generate unique slug
+    let slug: string;
+    try {
+      slug = await generateUniqueSlug(8);
+    } catch (slugErr) {
+      console.error('[create-card] Step 2 FAILED - generateUniqueSlug:', slugErr);
+      // Fallback: use a uuid substring (extremely unlikely to collide)
+      slug = uuidv4().replace(/-/g, '').substring(0, 8);
+    }
+
     // Map occasion string to enum
     let enumOccasion = 'CUSTOM';
     if (occasion === 'Friendship Day') enumOccasion = 'FRIENDSHIP_DAY';
@@ -57,27 +73,34 @@ export async function POST(req: NextRequest) {
     if (recipientName === 'Sis') enumNickname = 'SIS';
     if (recipientName === 'Best Friend') enumNickname = 'BEST_FRIEND';
 
-    await db.surprise.create({
-      data: {
-        id,
-        slug: uuidv4().substring(0, 8),
-        editToken: uuidv4(),
-        occasion: enumOccasion as any,
-        customOccasion: enumOccasion === 'CUSTOM' ? String(occasion || '').substring(0, 40) : null,
-        recipientNickname: enumNickname as any,
-        customNickname: enumNickname === 'OTHER' ? String(recipientName || '').substring(0, 30) : null,
-        senderName: String(senderName || 'Someone Special').substring(0, 40),
-        message: String(cleanMessage || '').substring(0, 600),
-        polaroidCaption: signatureText ? String(signatureText).substring(0, 120) : null,
-        musicType: audioFileUrl ? 'UPLOAD' : audioLink ? 'YOUTUBE' : 'NONE',
-        youtubeUrl: audioLink || null,
-        status: 'PUBLISHED',
-        creatorIpHash: String(ip || '127.0.0.1'),
-        publishedAt: new Date()
-      }
-    });
+    // Step 3: Create the surprise record (critical)
+    try {
+      await db.surprise.create({
+        data: {
+          id,
+          slug,
+          editToken: uuidv4(),
+          occasion: enumOccasion as any,
+          customOccasion: enumOccasion === 'CUSTOM' ? String(occasion || '').substring(0, 40) : null,
+          recipientNickname: enumNickname as any,
+          customNickname: enumNickname === 'OTHER' ? String(recipientName || '').substring(0, 30) : null,
+          senderName: String(senderName || 'Someone Special').substring(0, 40),
+          message: String(cleanMessage || '').substring(0, 600),
+          polaroidCaption: signatureText ? String(signatureText).substring(0, 120) : null,
+          musicType: audioFileUrl ? 'UPLOAD' : audioLink ? 'YOUTUBE' : 'NONE',
+          youtubeUrl: audioLink || null,
+          status: 'PUBLISHED',
+          creatorIpHash: String(ip || '127.0.0.1'),
+          publishedAt: new Date()
+        }
+      });
+    } catch (createErr) {
+      console.error('[create-card] Step 3 FAILED - db.surprise.create:', createErr);
+      const msg = createErr instanceof Error ? createErr.message : String(createErr);
+      return NextResponse.json({ error: `Database error: ${msg}` }, { status: 500 });
+    }
 
-    // Handle media (which is now in a separate table)
+    // Step 4: Handle media (non-fatal)
     const mediaToCreate = [];
     if (photo1Url) {
       mediaToCreate.push({ surpriseId: id, role: 'POLAROID', url: photo1Url, storageKey: photo1Url, mimeType: 'image/jpeg', sizeBytes: 0 });
@@ -103,10 +126,11 @@ export async function POST(req: NextRequest) {
       try {
         await Promise.all(mediaToCreate.map((item) => db.mediaAsset.create({ data: item as any })));
       } catch (mediaErr) {
-        console.error('Error creating media assets:', mediaErr);
+        console.error('[create-card] Step 4 WARNING - media assets:', mediaErr);
       }
     }
 
+    // Step 5: Create lead (non-fatal)
     if (userInfo && userInfo.name && userInfo.email && userInfo.phone) {
       try {
         await db.lead.create({
@@ -118,13 +142,13 @@ export async function POST(req: NextRequest) {
           }
         });
       } catch (leadErr) {
-        console.error('Error creating lead:', leadErr);
+        console.error('[create-card] Step 5 WARNING - lead creation:', leadErr);
       }
     }
 
     return NextResponse.json({ id, url: `/surprise/${id}` });
   } catch (error) {
-    console.error('Error creating card:', error);
+    console.error('[create-card] UNHANDLED ERROR:', error);
     const errorMessage = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

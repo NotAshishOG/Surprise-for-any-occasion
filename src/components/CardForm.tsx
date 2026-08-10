@@ -138,14 +138,16 @@ export function CardForm() {
         userInfo
       };
 
-      const fetchWithRetry = async (url: string, options: RequestInit, retries = 2, delayMs = 1500): Promise<Response> => {
+      const fetchWithRetry = async (url: string, options: RequestInit, retries = 2, initialDelayMs = 2500): Promise<Response> => {
         let lastRes: Response | null = null;
         for (let i = 0; i <= retries; i++) {
           lastRes = await fetch(url, options);
           if (lastRes.status !== 429 || i === retries) {
             return lastRes;
           }
-          await new Promise((resolve) => setTimeout(resolve, delayMs));
+          // Exponential backoff: 2.5s, 5s...
+          const delay = initialDelayMs * Math.pow(2, i);
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
         return lastRes!;
       };
@@ -158,9 +160,17 @@ export function CardForm() {
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-      
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        // Handle non-JSON responses (e.g., HTML rate limit page)
+      }
+
       if (!res.ok) {
+        if (res.status === 429) {
+          throw new Error("HTTP 429: Too Many Requests");
+        }
         throw new Error(data.error || "Failed to create surprise");
       }
 
@@ -169,7 +179,7 @@ export function CardForm() {
     } catch (err: unknown) {
       const msg = (err as Error).message || "";
       if (msg.toLowerCase().includes("too many requests") || msg.includes("429")) {
-        setError("You're generating cards fast! Please wait a few seconds and click 'Generate Shareable Link' again 💖");
+        setError("High traffic detected! Please wait 10-15 seconds and click 'Generate Shareable Link' again 💖");
       } else {
         setError(msg);
       }
