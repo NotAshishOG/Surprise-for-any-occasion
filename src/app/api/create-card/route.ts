@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import sanitizeHtml from 'sanitize-html';
 import { db } from '@/lib/db';
 import { isRateLimited } from '@/lib/rateLimiter';
 import { Prisma, Occasion, Nickname } from '@prisma/client';
+
+function sanitizeInput(str: string): string {
+  if (!str) return '';
+  return str.replace(/<[^>]*>?/gm, '').trim();
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     const id = uuidv4();
-    const cleanMessage = sanitizeHtml(message);
+    const cleanMessage = sanitizeInput(message);
 
     // Map occasion string to enum
     let enumOccasion = 'CUSTOM';
