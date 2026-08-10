@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'System is currently under maintenance. Card creation is temporarily paused.' }, { status: 503 });
     }
 
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || '127.0.0.1';
-    if (isRateLimited(ip)) {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || req.headers.get('cf-connecting-ip');
+    if (ip && isRateLimited(ip)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
         musicType: audioFileUrl ? 'UPLOAD' : audioLink ? 'YOUTUBE' : 'NONE',
         youtubeUrl: audioLink || null,
         status: 'PUBLISHED',
-        creatorIpHash: ip, // we could hash it properly
+        creatorIpHash: ip || '127.0.0.1', // we could hash it properly
         publishedAt: new Date()
       }
     });
