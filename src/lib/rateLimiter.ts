@@ -6,18 +6,19 @@ interface RateLimitData {
 
 const store = new Map<string, RateLimitData>();
 
-// Cleans up expired entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, data] of store.entries()) {
-    if (now > data.resetTime) {
-      store.delete(ip);
-    }
-  }
-}, 60000);
+
 
 export function isRateLimited(ip: string, maxRequests: number = 10, windowMs: number = 3600000): boolean {
   const now = Date.now();
+
+  if (store.size > 100) {
+    for (const [key, data] of store.entries()) {
+      if (now > data.resetTime) {
+        store.delete(key);
+      }
+    }
+  }
+
   const current = store.get(ip);
 
   if (!current) {
