@@ -8,7 +8,7 @@ const store = new Map<string, RateLimitData>();
 
 
 
-export function isRateLimited(ip: string, maxRequests: number = 10, windowMs: number = 3600000): boolean {
+export function isRateLimited(ip: string, maxRequests: number = 30, windowMs: number = 3600000): boolean {
   const now = Date.now();
 
   if (store.size > 100) {
