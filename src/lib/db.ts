@@ -1,68 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgres';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+const pool = new Pool({
+  connectionString,
+  ssl: connectionString.includes('localhost') || connectionString.includes('127.0.0.1')
+    ? false
+    : { rejectUnauthorized: false }
+});
+const adapter = new PrismaPg(pool);
 
-export interface Card {
-  id: string;
-  senderName?: string;
-  recipientName: string;
-  message: string;
-  occasion: string;
-  photo1Url?: string;
-  photo2Url?: string;
-  audioFileUrl?: string;
-  audioLinkUrl?: string;
-  signatureText?: string;
-  extraPhotoUrls?: string[];
-  balloonPhotoUrls?: string[];
-  createdAt: string;
+const prismaClientSingleton = () => {
+  return new PrismaClient({ adapter });
+};
+
+declare global {
+  var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>;
 }
 
-export async function getCardById(id: string): Promise<Card | undefined> {
-  const { data, error } = await supabase
-    .from('cards')
-    .select('*')
-    .eq('id', id)
-    .single();
+export const db = globalThis.prismaGlobal ?? prismaClientSingleton();
 
-  if (error) {
-    console.error('Error fetching card:', error);
-    return undefined;
-  }
-
-  return data as Card;
-}
-
-export async function saveCard(card: Card): Promise<void> {
-  const { error } = await supabase
-    .from('cards')
-    .insert([card]);
-
-  if (error) {
-    console.error('Error saving card:', error);
-    throw new Error('Failed to save card');
-  }
-}
-
-export interface Lead {
-  id?: string;
-  name: string;
-  email: string;
-  phone: string;
-  card_id: string;
-  created_at?: string;
-}
-
-export async function saveLead(lead: Lead): Promise<void> {
-  const { error } = await supabase
-    .from('leads')
-    .insert([lead]);
-
-  if (error) {
-    console.error('Error saving lead:', error);
-    throw new Error('Failed to save lead info');
-  }
-}
+if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = db;

@@ -21,7 +21,7 @@ export function Footer() {
             </a>
             
             <p className="text-gray-600 font-medium leading-relaxed max-w-[300px] text-sm">
-              India's AI Assistant built for speed, creativity, and productivity.
+              India&apos;s AI Assistant built for speed, creativity, and productivity.
             </p>
             
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-800 bg-white/40 px-3 py-1.5 rounded-full border border-white/60 shadow-sm backdrop-blur-sm">

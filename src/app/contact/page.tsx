@@ -34,7 +34,7 @@ export default function ContactUs() {
         setStatus("error");
         setErrorMessage(data.error || "Failed to send message.");
       }
-    } catch (err) {
+    } catch (_err) {
       setStatus("error");
       setErrorMessage("Network error. Please try again later.");
     }
@@ -109,7 +109,7 @@ export default function ContactUs() {
             <div>
               <h2 className="text-2xl font-bold border-b-4 border-black pb-2 inline-block mb-4">Direct Contact</h2>
               <p className="mb-4 text-gray-600">
-                Have a question, feedback, or need help with a card you created? We'd love to hear from you directly!
+                Have a question, feedback, or need help with a card you created? We&apos;d love to hear from you directly!
               </p>
               
               <div className="flex flex-col gap-4">

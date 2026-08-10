@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+enum Occasion {
+  FRIENDSHIP_DAY
+  BIRTHDAY
+  ANNIVERSARY
+  VALENTINES_DAY
+  CUSTOM
+}
+
+enum Nickname {
+  BESTIE
+  YAAR
+  DOST
+  BRO
+  SIS
+  BEST_FRIEND
+  OTHER
+}
+
+enum MusicType {
+  NONE
+  YOUTUBE
+  UPLOAD
+}
+
+enum SurpriseStatus {
+  DRAFT
+  PUBLISHED
+  FLAGGED
+  REMOVED
+}
+
+enum MediaRole {
+  POLAROID
+  HERO
+  EXTRA
+  BALLOON
+  AUDIO
+}
+
+model Surprise {
+  id                String         @id @default(uuid())
+  slug              String         @unique
+  editToken         String         @unique
+
+  occasion          Occasion
+  customOccasion    String?        @db.VarChar(40)
+  recipientNickname Nickname
+  customNickname    String?        @db.VarChar(30)
+  senderName        String         @db.VarChar(40)
+
+  message           String         @db.VarChar(600)
+
+  polaroidCaption   String?        @db.VarChar(120)
+
+  musicType         MusicType      @default(NONE)
+  youtubeUrl        String?
+
+  status            SurpriseStatus @default(DRAFT)
+  viewCount         Int            @default(0)
+  lastViewedAt      DateTime?
+
+  creatorIpHash     String
+  creatorUserAgent  String?
+
+  expiresAt         DateTime?
+  publishedAt       DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  media             MediaAsset[]
+  reports           Report[]
+  leads             Lead[]
+
+  @@index([slug])
+  @@index([status, expiresAt])
+}
+
+model MediaAsset {
+  id               String            @id @default(uuid())
+  surpriseId       String
+  surprise         Surprise          @relation(fields: [surpriseId], references: [id], onDelete: Cascade)
+  role             MediaRole
+  position         Int               @default(0)
+  storageKey       String
+  url              String
+  mimeType         String
+  sizeBytes        Int
+  width            Int?
+  height           Int?
+  durationSec      Int?
+  createdAt        DateTime          @default(now())
+
+  @@index([surpriseId, role])
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  surpriseId     String
+  surprise       Surprise @relation(fields: [surpriseId], references: [id], onDelete: Cascade)
+  reason         String   @db.VarChar(300)
+  reporterIpHash String
+  createdAt      DateTime @default(now())
+
+  @@index([surpriseId])
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(80)
+  email     String   @db.VarChar(120)
+  subject   String   @db.VarChar(140)
+  message   String   @db.VarChar(2000)
+  createdAt DateTime @default(now())
+}
+
+model Lead {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(80)
+  email     String   @db.VarChar(120)
+  phone     String   @db.VarChar(30)
+  cardId    String
+  surprise  Surprise @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([cardId])
+}
+
+model RequestLog {
+  id        String   @id @default(uuid())
+  ipHash    String
+  endpoint  String
+  createdAt DateTime @default(now())
+
+  @@index([ipHash, endpoint, createdAt])
+}
+
+model SystemSettings {
+  id                  String   @id @default("global") // Single row enforced
+  websiteName         String   @default("Special Surprise")
+  logoUrl             String?
+  supportEmail        String   @default("supportchatmiai@gmail.com")
+  privacyText         String?  @db.Text
+  termsText           String?  @db.Text
+  autoDeleteEnabled   Boolean  @default(true)
+  leadCollectionEnabled Boolean @default(true)
+  maintenanceMode     Boolean  @default(false)
+  analyticsEnabled    Boolean  @default(true)
+  storageLimitMb      Int      @default(5000)
+  maxUploadSizeMb     Int      @default(15)
+  maxHeroImages       Int      @default(1)
+  maxPolaroidImages   Int      @default(1)
+  maxBalloons         Int      @default(3)
+  maxExtraImages      Int      @default(5)
+  maxAudio            Int      @default(1)
+  updatedAt           DateTime @updatedAt
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  SUB_ADMIN
+}
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  username     String    @unique @db.VarChar(50)
+  passwordHash String
+  name         String    @db.VarChar(100)
+  role         AdminRole @default(SUB_ADMIN)
+  permissions  String[]
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([username])
+}
+

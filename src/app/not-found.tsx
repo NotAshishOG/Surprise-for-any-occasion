@@ -23,7 +23,7 @@ export default function NotFound() {
         </h1>
         
         <p className="text-lg md:text-xl font-medium text-gray-600 mb-8 leading-relaxed">
-          It looks like this surprise card doesn't exist, or the link might be broken. 
+          It looks like this surprise card doesn&apos;t exist, or the link might be broken. 
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center">

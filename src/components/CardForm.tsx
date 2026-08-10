@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 import { UploadZone } from "./UploadZone";
 import { Button } from "./ui/Button";
 import { CopyLink } from "./ui/CopyLink";
-import { supabase } from "@/lib/db";
+import { supabase } from "@/lib/supabase-client";
 import { v4 as uuidv4 } from "uuid";
 import { UserVerificationModal } from "./UserVerificationModal";
 

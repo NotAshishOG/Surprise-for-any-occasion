@@ -1,14 +1,16 @@
 import { notFound } from "next/navigation";
-import { getCardById } from "@/lib/db";
+import { db } from "@/lib/db";
 import { SurpriseExperience } from "@/components/surprise/SurpriseExperience";
-
 import { Metadata } from 'next';
 
 export async function generateMetadata(
   props: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
   const params = await props.params;
-  const card = await getCardById(params.id);
+  const card = await db.surprise.findUnique({
+    where: { id: params.id },
+    include: { media: true }
+  });
 
   if (!card) {
     return {
@@ -17,11 +19,14 @@ export async function generateMetadata(
     };
   }
 
-  const title = `A Special Surprise For ${card.recipientName}! 🎁`;
+  const title = `A Special Surprise For ${card.recipientNickname === 'OTHER' ? card.customNickname : card.recipientNickname}! 🎁`;
   const description = card.senderName 
     ? `${card.senderName} has sent you a beautiful digital greeting card.` 
     : `Someone has sent you a beautiful digital greeting card.`;
     
+  const heroMedia = card.media.find(m => m.role === 'HERO');
+  const imageUrl = heroMedia?.url || "https://surprise-for-any-occasion-fzg1.vercel.app/chatmi.jpg";
+
   return {
     title,
     description,
@@ -29,9 +34,9 @@ export async function generateMetadata(
       title,
       description,
       type: 'website',
-      images: card.photo1Url ? [card.photo1Url] : [
+      images: [
         {
-          url: "https://surprise-for-any-occasion-fzg1.vercel.app/chatmi.jpg",
+          url: imageUrl,
           width: 1200,
           height: 630,
         }
@@ -41,22 +46,51 @@ export async function generateMetadata(
       card: 'summary_large_image',
       title,
       description,
-      images: card.photo1Url ? [card.photo1Url] : ["https://surprise-for-any-occasion-fzg1.vercel.app/chatmi.jpg"],
+      images: [imageUrl],
     },
   };
 }
 
 export default async function SurprisePage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const card = await getCardById(params.id);
+  const card = await db.surprise.findUnique({
+    where: { id: params.id },
+    include: { media: true }
+  });
 
   if (!card) {
     notFound();
   }
 
+  // Increment view count
+  await db.surprise.update({
+    where: { id: card.id },
+    data: { 
+      viewCount: { increment: 1 },
+      lastViewedAt: new Date()
+    }
+  });
+
+  // Map the Prisma model back to the format expected by SurpriseExperience component
+  const mappedCard = {
+    id: card.id,
+    senderName: card.senderName,
+    recipientName: card.recipientNickname === 'OTHER' ? card.customNickname : card.recipientNickname,
+    message: card.message,
+    occasion: card.occasion === 'CUSTOM' ? card.customOccasion : card.occasion,
+    photo1Url: card.media.find(m => m.role === 'POLAROID')?.url || null,
+    photo2Url: card.media.find(m => m.role === 'HERO')?.url || null,
+    audioFileUrl: card.media.find(m => m.role === 'AUDIO')?.url || null,
+    audioLinkUrl: card.youtubeUrl,
+    signatureText: card.polaroidCaption,
+    extraPhotoUrls: card.media.filter(m => m.role === 'EXTRA').sort((a,b)=>a.position - b.position).map(m => m.url),
+    balloonPhotoUrls: card.media.filter(m => m.role === 'BALLOON').sort((a,b)=>a.position - b.position).map(m => m.url),
+  };
+
   return (
     <main className="min-h-screen">
-      <SurpriseExperience card={card} />
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      <SurpriseExperience card={mappedCard as any} />
     </main>
   );
 }

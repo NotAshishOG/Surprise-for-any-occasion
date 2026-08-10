@@ -42,7 +42,7 @@ export default function FAQ() {
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold font-sans mb-6">Frequently Asked Questions</h1>
           <p className="text-xl text-gray-600 font-medium max-w-2xl mx-auto">
-            Find answers to common questions about Chatmi AI. If you can't find what you're looking for, feel free to contact our support team.
+            Find answers to common questions about Chatmi AI. If you can&apos;t find what you&apos;re looking for, feel free to contact our support team.
           </p>
         </div>
 
