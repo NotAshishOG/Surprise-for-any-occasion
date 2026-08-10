@@ -1,44 +1,46 @@
 import { db } from './db';
 
 const rateLimits = {
-  draft: 20,
-  upload: 60,
-  report: 10,
-  contact: 5,
-  default: 120,
+  draft: 200,
+  upload: 1000,
+  report: 50,
+  contact: 50,
+  default: 500,
 };
 
 export async function checkRateLimit(endpoint: keyof typeof rateLimits, ipHash: string): Promise<boolean> {
-  const oneHourAgo = new Date(Date.now() - 3600000);
-  
-  // Clean up old records occasionally (1% chance to run cleanup inline, otherwise handled by cron)
-  if (Math.random() < 0.01) {
-    await db.requestLog.deleteMany({
-      where: { createdAt: { lt: oneHourAgo } }
-    }).catch(console.error); // don't block
-  }
-
-  const count = await db.requestLog.count({
-    where: {
-      ipHash,
-      endpoint,
-      createdAt: { gte: oneHourAgo }
+  try {
+    const oneHourAgo = new Date(Date.now() - 3600000);
+    
+    if (Math.random() < 0.01) {
+      await db.requestLog.deleteMany({
+        where: { createdAt: { lt: oneHourAgo } }
+      }).catch(console.error);
     }
-  });
 
-  const limit = rateLimits[endpoint];
-  
-  if (count >= limit) {
-    return false;
-  }
+    const count = await db.requestLog.count({
+      where: {
+        ipHash,
+        endpoint,
+        createdAt: { gte: oneHourAgo }
+      }
+    });
 
-  // Log the new request
-  await db.requestLog.create({
-    data: {
-      ipHash,
-      endpoint
+    const limit = rateLimits[endpoint];
+    if (count >= limit) {
+      return false;
     }
-  });
 
-  return true;
+    await db.requestLog.create({
+      data: {
+        ipHash,
+        endpoint
+      }
+    }).catch(console.error);
+
+    return true;
+  } catch (err) {
+    console.error('Error in checkRateLimit:', err);
+    return true; // fail open so rate limiting doesn't block users on DB error
+  }
 }

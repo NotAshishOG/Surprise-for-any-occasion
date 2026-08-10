@@ -13,7 +13,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'System is currently under maintenance. File upload is temporarily disabled.' }, { status: 503 });
     }
 
-    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || req.headers.get('x-real-ip') || '127.0.0.1';
     
     // Convert to IP hash (or pass directly if we want `checkRateLimit` to do the hashing, 
     // wait, `checkRateLimit` currently expects an ipHash string. Let's hash it here.)
