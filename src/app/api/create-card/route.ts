@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '@/lib/db';
 import { isRateLimited } from '@/lib/rateLimiter';
-import { Prisma, Occasion, Nickname } from '@prisma/client';
+
 
 function sanitizeInput(str: string): string {
   if (!str) return '';
@@ -65,9 +65,9 @@ export async function POST(req: NextRequest) {
         id,
         slug: uuidv4().substring(0, 8),
         editToken: uuidv4(),
-        occasion: enumOccasion as Occasion,
+        occasion: enumOccasion as any,
         customOccasion: enumOccasion === 'CUSTOM' ? occasion : null,
-        recipientNickname: enumNickname as Nickname,
+        recipientNickname: enumNickname as any,
         customNickname: enumNickname === 'OTHER' ? recipientName : null,
         senderName: senderName || 'Someone Special',
         message: cleanMessage,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (mediaToCreate.length > 0) {
-      await db.mediaAsset.createMany({ data: mediaToCreate as Prisma.MediaAssetCreateManyInput[] });
+      await db.mediaAsset.createMany({ data: mediaToCreate as any[] });
     }
 
     if (userInfo && userInfo.name && userInfo.email && userInfo.phone) {
