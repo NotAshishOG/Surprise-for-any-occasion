@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (mediaToCreate.length > 0) {
-      await db.mediaAsset.createMany({ data: mediaToCreate as any[] });
+      await Promise.all(mediaToCreate.map((item) => db.mediaAsset.create({ data: item as any })));
     }
 
     if (userInfo && userInfo.name && userInfo.email && userInfo.phone) {
