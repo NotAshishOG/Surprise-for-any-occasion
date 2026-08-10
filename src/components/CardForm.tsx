@@ -138,7 +138,19 @@ export function CardForm() {
         userInfo
       };
 
-      const res = await fetch("/api/create-card", {
+      const fetchWithRetry = async (url: string, options: RequestInit, retries = 2, delayMs = 1500): Promise<Response> => {
+        let lastRes: Response | null = null;
+        for (let i = 0; i <= retries; i++) {
+          lastRes = await fetch(url, options);
+          if (lastRes.status !== 429 || i === retries) {
+            return lastRes;
+          }
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+        return lastRes!;
+      };
+
+      const res = await fetchWithRetry("/api/create-card", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -155,7 +167,12 @@ export function CardForm() {
       setResultUrl(data.url);
       setIsModalOpen(false);
     } catch (err: unknown) {
-      setError((err as Error).message);
+      const msg = (err as Error).message || "";
+      if (msg.toLowerCase().includes("too many requests") || msg.includes("429")) {
+        setError("You're generating cards fast! Please wait a few seconds and click 'Generate Shareable Link' again 💖");
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
