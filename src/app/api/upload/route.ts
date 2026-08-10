@@ -22,10 +22,6 @@ export async function POST(req: Request) {
     const { hashIp } = await import('@/lib/ipHash');
     const ipHash = hashIp(ip);
 
-    const isAllowed = await checkRateLimit('upload', ipHash);
-    if (!isAllowed) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-    }
 
     const formData = await req.formData();
     
