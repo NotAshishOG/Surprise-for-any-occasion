@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id, url: `/surprise/${id}` });
   } catch (error) {
     console.error('Error creating card:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    const errorMessage = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
